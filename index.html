@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>EletrecistaPRO</title>
+    
+    <!-- Carregando Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Carregando React e ReactDOM (Versão de Desenvolvimento/CDN) -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    
+    <!-- Carregando Babel para compilar o JSX direto no navegador -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap');
+        
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background-color: #000; 
+            margin: 0;
+            padding: 0;
+            overflow: hidden; /* Mantém o visual de App */
+        }
+        
+        .animate-fade-in { animation: fadeIn 0.3s ease-in-out; }
+        .animate-fade-in-down { animation: fadeInDown 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
+        
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes fadeInDown { from { opacity: 0; transform: translateY(-15px); } to { opacity: 1; transform: translateY(0); } }
+        
+        /* Ocultando scrollbars para um visual mais limpo */
+        ::-webkit-scrollbar { width: 0px; background: transparent; }
+    </style>
+</head>
+
+
+
+
+<body class="bg-black min-h-screen flex items-center justify-center font-sans p-0 sm:p-4">
+    
+    <div id="root" class="w-full h-full sm:h-[850px] sm:max-h-[95vh] sm:max-w-md bg-[#121212] sm:rounded-[40px] shadow-2xl relative overflow-hidden sm:ring-4 sm:ring-gray-900 sm:border-8 sm:border-gray-950 flex flex-col"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        // --- ÍCONES SVG INLINE (Substituindo o lucide-react para funcionar em HTML simples) ---
+        const IconBase = ({ d, polyline, circle, line, rect, size=20, className="", fill="none" }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill={fill} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+                {d && <path d={d}></path>}
+                {polyline && <polyline points={polyline}></polyline>}
+                {circle && <circle cx={circle.cx} cy={circle.cy} r={circle.r}></circle>}
+                {line && <line x1={line.x1} y1={line.y1} x2={line.x2} y2={line.y2}></line>}
+                {rect && <rect x={rect.x} y={rect.y} width={rect.w} height={rect.h} rx={rect.rx} ry={rect.ry}></rect>}
+            </svg>
+        );
+
+        const Zap = ({size, className, fill}) => <svg width={size||20} height={size||20} viewBox="0 0 24 24" fill={fill||"none"} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>;
+        const User = ({size, className}) => <svg width={size||20} height={size||20} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>;
+        const Home = ({size, className}) => <svg width={size||20} height={size||20} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>;
+        const LogOut = ({size, className}) => <svg width={size||20} height={size||20} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>;
+        const ChevronDown = ({size, className}) => <svg width={size||20} height={size||20} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="6 9 12 15 18 9"></polyline></svg>;
+        const CheckCircle2 = ({size, className}) => <svg width={size||20} height={size||20} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="12" r="10"></circle><polyline points="8 12 11 15 16 9"></polyline></svg>;
+        const AlertCircle = ({size, className}) => <svg width={size||20} height={size||20} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>;
+        const Mail = ({size, className}) => <svg width={size||20} height={size||20} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><rect width="20" height="16" x="2" y="4" rx="2"></rect><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"></path></svg>;
+        const Lock = ({size, className}) => <svg width={size||20} height={size||20} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><rect width="18" height="11" x="3" y="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>;
+        const MapPin = ({size, className}) => <svg width={size||20} height={size||20} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"></path><circle cx="12" cy="10" r="3"></circle></svg>;
+        const Briefcase = ({size, className}) => <svg width={size||20} height={size||20} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><rect width="20" height="14" x="2" y="7" rx="2" ry="2"></rect><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path></svg>;
+        const Clock = ({size, className}) => <svg width={size||20} height={size||20} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>;
+        const Activity = ({size, className}) => <svg width={size||20} height={size||20} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>;
+        const Settings = ({size, className}) => <svg width={size||20} height={size||20} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path><circle cx="12" cy="12" r="3"></circle></svg>;
+
+        const Input = ({ label, icon: Icon, ...props }) => (
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-300 mb-1">{label}</label>
+            <div className="relative">
+              {Icon && <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><Icon size={20} className="text-gray-500" /></div>}
+              <input
+                className={`w-full bg-[#121212] border border-gray-700 text-white rounded-xl focus:ring-2 focus:ring-[#2563EB] focus:border-transparent block ${Icon ? 'pl-10' : 'pl-4'} p-3.5 text-base transition-all`}
+                {...props}
+              />
+            </div>
+          </div>
+        );
+
+        const Select = ({ label, icon: Icon, options, ...props }) => (
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-300 mb-1">{label}</label>
+            <div className="relative">
+              {Icon && <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><Icon size={20} className="text-gray-500" /></div>}
+              <select
+                className={`w-full bg-[#121212] border border-gray-700 text-white rounded-xl focus:ring-2 focus:ring-[#2563EB] focus:border-transparent block appearance-none ${Icon ? 'pl-10' : 'pl-4'} p-3.5 text-base transition-all`}
+                {...props}
+              >
+                <option value="" disabled>Selecione...</option>
+                {options.map((opt, i) => <option key={i} value={opt}>{opt}</option>)}
+              </select>
+              <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                <ChevronDown size={20} className="text-gray-400" />
+              </div>
+            </div>
+          </div>
+        );
+
+        const Button = ({ children, variant = 'primary', className = '', isLoading, ...props }) => {
+          const baseStyle = "w-full rounded-xl font-semibold text-lg py-4 transition-all flex justify-center items-center active:scale-[0.98]";
+          const variants = {
+            primary: "bg-[#2563EB] hover:bg-blue-700 text-white shadow-lg",
+            secondary: "bg-[#1E1E1E] border border-gray-700 hover:bg-gray-800 text-white",
+            danger: "bg-red-500/10 border border-red-500/50 text-red-500 hover:bg-red-500/20"
+          };
+          
+          return (
+            <button className={`${baseStyle} ${variants[variant]} ${className}`} disabled={isLoading} {...props}>
+              {isLoading ? <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin"></div> : children}
+            </button>
+          );
+        };
+
+        const Toast = ({ message, type, onClose }) => {
+          useEffect(() => {
+            const timer = setTimeout(onClose, 4000);
+            return () => clearTimeout(timer);
+          }, [onClose]);
+
+          return (
+            <div className="fixed top-4 left-1/2 transform -translate-x-1/2 w-[90%] max-w-sm z-50 animate-fade-in-down">
+              <div className={`flex items-center p-4 rounded-xl shadow-2xl ${type === 'error' ? 'bg-red-500/90' : 'bg-green-600/90'} text-white backdrop-blur-sm`}>
+                {type === 'error' ? <AlertCircle className="mr-3" /> : <CheckCircle2 className="mr-3" />}
+                <p className="font-medium">{message}</p>
+              </div>
+            </div>
+          );
+        };
+
+        const Logo = ({ size = 'normal' }) => (
+          <div className="flex flex-col items-center justify-center">
+            <div className={`${size === 'large' ? 'w-20 h-20' : 'w-12 h-12'} bg-[#2563EB]/10 rounded-full flex items-center justify-center mb-2`}>
+              <Zap size={size === 'large' ? 40 : 24} className="text-[#2563EB]" fill="#2563EB" />
+            </div>
+            <h1 className={`${size === 'large' ? 'text-3xl' : 'text-xl'} font-bold text-white tracking-tight`}>
+              Eletrecista<span className="text-[#2563EB]">PRO</span>
+            </h1>
+          </div>
+        );
+
+        const LoginScreen = ({ onNavigate, onLogin, showToast }) => {
+          const [email, setEmail] = useState('');
+          const [password, setPassword] = useState('');
+
+          const handleLogin = (e) => {
+            e.preventDefault();
+            if (!email || !password) {
+              showToast('Por favor, preencha e-mail e senha.', 'error');
+              return;
+            }
+            onLogin({ name: 'João Eletricista', email });
+          };
+
+          return (
+            <div className="flex flex-col h-full p-6 justify-center animate-fade-in">
+              <div className="mb-12">
+                <Logo size="large" />
+              </div>
+              
+              <form onSubmit={handleLogin} className="space-y-4">
+                <Input label="E-mail" type="email" icon={Mail} placeholder="seu@email.com" value={email} onChange={(e) => setEmail(e.target.value)} />
+                <Input label="Senha" type="password" icon={Lock} placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} />
+                
+                <div className="flex items-center justify-between mt-2 mb-8">
+                  <label className="flex items-center text-sm text-gray-400">
+                    <input type="checkbox" className="w-5 h-5 rounded border-gray-600 bg-[#121212] text-[#2563EB] mr-2 focus:ring-[#2563EB]" />
+                    Lembrar-me
+                  </label>
+                  <button type="button" className="text-sm text-[#2563EB] font-medium">Esqueci minha senha</button>
+                </div>
+
+                <Button type="submit">Entrar</Button>
+              </form>
+
+              <div className="mt-8 text-center">
+                <p className="text-gray-400">
+                  Ainda não tem conta?{' '}
+                  <button onClick={() => onNavigate('register')} className="text-[#2563EB] font-bold">Cadastrar</button>
+                </p>
+              </div>
+            </div>
+          );
+        };
+
+        const RegisterScreen = ({ onNavigate, showToast }) => {
+          const [formData, setFormData] = useState({
+            nome: '', email: '', area: '', experiencia: '', estado: '', cidade: '', cep: '', senha: '', confirmarSenha: ''
+          });
+          const [loading, setLoading] = useState(false);
+
+          const handleChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
+
+          const handleSubmit = (e) => {
+            e.preventDefault();
+            const { nome, email, area, experiencia, estado, cidade, senha, confirmarSenha } = formData;
+            
+            if (!nome || !email || !area || !experiencia || !estado || !cidade || !senha) {
+              showToast('Preencha todos os campos obrigatórios.', 'error');
+              return;
+            }
+            if (senha !== confirmarSenha) {
+              showToast('As senhas não coincidem.', 'error');
+              return;
+            }
+
+            setLoading(true);
+            setTimeout(() => {
+              console.log('--- DADOS ENVIADOS PARA O BACKEND ---', formData);
+              setLoading(false);
+              showToast('Cadastro realizado com sucesso!', 'success');
+              onNavigate('login');
+            }, 1500);
+          };
+
+          return (
+            <div className="flex flex-col h-full animate-fade-in">
+              <div className="p-4 flex items-center bg-[#1E1E1E] sticky top-0 z-10 border-b border-gray-800">
+                <button onClick={() => onNavigate('login')} className="text-gray-400 p-2">
+                   <ChevronDown className="rotate-90" />
+                </button>
+                <h2 className="text-lg font-bold text-white ml-2">Criar Conta</h2>
+              </div>
+
+              <div className="p-6 overflow-y-auto pb-24">
+                <form onSubmit={handleSubmit} className="space-y-2">
+                  <Input label="Nome Completo" name="nome" icon={User} onChange={handleChange} />
+                  <Input label="E-mail" type="email" name="email" icon={Mail} onChange={handleChange} />
+                  <Select label="Área que atua" name="area" icon={Briefcase} options={["Eletricista Residencial", "Eletricista Industrial", "Técnico em Elétrica", "Engenheiro Eletricista", "Instalador", "Autônomo", "Estudante", "Outro"]} onChange={handleChange} />
+                  <Select label="Tempo de Experiência" name="experiencia" icon={Clock} options={["Menos de 1 ano", "1 a 3 anos", "3 a 5 anos", "5 a 10 anos", "Mais de 10 anos"]} onChange={handleChange} />
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <Input label="Estado (UF)" name="estado" maxLength="2" icon={MapPin} onChange={handleChange} />
+                    <Input label="Cidade" name="cidade" onChange={handleChange} />
+                  </div>
+                  
+                  <Input label="CEP (Opcional)" name="cep" onChange={handleChange} />
+                  <Input label="Senha" type="password" name="senha" icon={Lock} onChange={handleChange} />
+                  <Input label="Confirmar Senha" type="password" name="confirmarSenha" icon={Lock} onChange={handleChange} />
+
+                  <div className="pt-4">
+                     <Button type="submit" isLoading={loading}>Finalizar Cadastro</Button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          );
+        };
+
+        const HomeScreen = ({ user, showToast }) => {
+          const [calcData, setCalcData] = useState({ circuito: 'monofasico', tensao: '220', corrente: '', comprimento: '', material: 'cobre', instalacao: 'b1', queda: '4' });
+          const [result, setResult] = useState(null);
+
+          const handleChange = (e) => setCalcData({ ...calcData, [e.target.name]: e.target.value });
+
+          const calcularCabo = () => {
+            if (!calcData.corrente || !calcData.comprimento) {
+              showToast('Informe a corrente e o comprimento.', 'error');
+              return;
+            }
+
+            const I = parseFloat(calcData.corrente);
+            const L = parseFloat(calcData.comprimento);
+            const V = parseFloat(calcData.tensao);
+            const dV_percent = parseFloat(calcData.queda) / 100;
+            const dV = V * dV_percent;
+            const rho = calcData.material === 'cobre' ? 0.0172 : 0.0282; 
+            const k = calcData.circuito === 'trifasico' ? Math.sqrt(3) : 2; 
+
+            const sectionTeorica = (k * rho * L * I) / dV;
+            const comerciais = [1.5, 2.5, 4, 6, 10, 16, 25, 35, 50, 70, 95, 120];
+            let recommended = comerciais.find(s => s >= sectionTeorica) || 120;
+            const capacidadeMock = recommended * (calcData.material === 'cobre' ? 8 : 6);
+
+            setResult({ secao: recommended, capacidade: capacidadeMock.toFixed(0), quedaV: dV.toFixed(1), quedaPerc: calcData.queda });
+            showToast('Cálculo realizado com sucesso!', 'success');
+          };
+
+          return (
+            <div className="flex flex-col h-full animate-fade-in bg-[#121212] overflow-y-auto pb-24">
+              <div className="bg-[#1E1E1E] p-6 rounded-b-3xl shadow-md">
+                <div className="flex justify-between items-center mb-6">
+                  <Logo size="small" />
+                  <div className="bg-[#2563EB]/20 p-2 rounded-full">
+                    <Activity className="text-[#2563EB]" size={20} />
+                  </div>
+                </div>
+                <h2 className="text-2xl font-bold text-white mb-1">Olá, {user.name.split(' ')[0]}!</h2>
+                <p className="text-gray-400">Vamos dimensionar um cabo hoje?</p>
+              </div>
+
+              <div className="p-5 space-y-5">
+                <div className="bg-[#1E1E1E] p-5 rounded-2xl border border-gray-800">
+                  <h3 className="text-lg font-bold text-white mb-4 border-b border-gray-800 pb-2">Parâmetros do Circuito</h3>
+                  <Select label="Tipo de Circuito" name="circuito" value={calcData.circuito} onChange={handleChange} options={["monofasico", "bifasico", "trifasico"]} />
+                  <Select label="Tensão (V)" name="tensao" value={calcData.tensao} onChange={handleChange} options={["127", "220", "380"]} />
+                  <div className="grid grid-cols-2 gap-4">
+                    <Input label="Corrente (A)" name="corrente" type="number" placeholder="Ex: 32" value={calcData.corrente} onChange={handleChange} />
+                    <Input label="Comp. (m)" name="comprimento" type="number" placeholder="Ex: 50" value={calcData.comprimento} onChange={handleChange} />
+                  </div>
+                </div>
+
+                <div className="bg-[#1E1E1E] p-5 rounded-2xl border border-gray-800">
+                  <h3 className="text-lg font-bold text-white mb-4 border-b border-gray-800 pb-2">Especificações</h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    <Select label="Material" name="material" value={calcData.material} onChange={handleChange} options={["cobre", "aluminio"]} />
+                    <Select label="Queda Admiss. (%)" name="queda" value={calcData.queda} onChange={handleChange} options={["2", "3", "4", "5", "7"]} />
+                  </div>
+                  <Select label="Método de Instalação" name="instalacao" value={calcData.instalacao} onChange={handleChange} options={["B1 (Eletroduto em alvenaria)", "B2 (Eletroduto aparente)", "C (Parede)"]} />
+                </div>
+
+                <Button onClick={calcularCabo} className="mt-4 shadow-blue-500/20 shadow-xl">
+                  <span className="flex items-center"><Zap size={20} className="mr-2" /> Calcular Seção</span>
+                </Button>
+
+                {result && (
+                  <div className="mt-6 bg-gradient-to-br from-[#1E1E1E] to-[#1a1a1a] p-6 rounded-2xl border-2 border-[#2563EB] shadow-2xl animate-fade-in-down relative overflow-hidden">
+                    <div className="absolute -right-6 -top-6 text-[#2563EB] opacity-10"><Zap size={100} /></div>
+                    <h3 className="text-gray-400 font-medium mb-1">Seção Transversal Recomendada</h3>
+                    <div className="flex items-baseline mb-6">
+                      <span className="text-5xl font-black text-white">{result.secao}</span>
+                      <span className="text-xl text-gray-400 ml-2">mm²</span>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4 border-t border-gray-800 pt-4">
+                      <div><p className="text-sm text-gray-500">Capacidade Máx.</p><p className="text-lg font-bold text-white">{result.capacidade} A</p></div>
+                      <div><p className="text-sm text-gray-500">Queda de Tensão</p><p className="text-lg font-bold text-white">{result.quedaV} V ({result.quedaPerc}%)</p></div>
+                    </div>
+                    <div className="mt-4 bg-[#121212] p-3 rounded-xl border border-gray-800">
+                      <p className="text-xs text-gray-400 flex items-start">
+                        <AlertCircle size={16} className="inline mr-2 mt-0.5 text-[#2563EB] flex-shrink-0" />
+                        <span>Cálculo referencial baseado na NBR 5410. Consulte sempre as especificações do fabricante e considere fatores de agrupamento.</span>
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          );
+        };
+
+        const ProfileScreen = ({ user, onLogout }) => (
+          <div className="flex flex-col h-full animate-fade-in">
+            <div className="bg-[#1E1E1E] p-6 pt-12 pb-8 rounded-b-3xl flex flex-col items-center">
+              <div className="w-24 h-24 bg-[#2563EB] rounded-full flex items-center justify-center text-3xl font-bold text-white mb-4 border-4 border-[#121212] shadow-lg">
+                {user.name.charAt(0)}
+              </div>
+              <h2 className="text-2xl font-bold text-white">{user.name}</h2>
+              <p className="text-gray-400">{user.email}</p>
+            </div>
+
+            <div className="p-6 space-y-4">
+              <div className="bg-[#1E1E1E] rounded-2xl p-4 border border-gray-800">
+                <div className="flex items-center text-gray-300 py-3 border-b border-gray-800">
+                  <Briefcase size={20} className="mr-4 text-gray-500" />
+                  <div><p className="text-xs text-gray-500">Área de Atuação</p><p className="font-medium text-white">Eletricista Industrial</p></div>
+                </div>
+                <div className="flex items-center text-gray-300 py-3 border-b border-gray-800">
+                  <Clock size={20} className="mr-4 text-gray-500" />
+                  <div><p className="text-xs text-gray-500">Experiência</p><p className="font-medium text-white">Mais de 10 anos</p></div>
+                </div>
+                <div className="flex items-center text-gray-300 py-3">
+                  <MapPin size={20} className="mr-4 text-gray-500" />
+                  <div><p className="text-xs text-gray-500">Localização</p><p className="font-medium text-white">São Paulo - SP</p></div>
+                </div>
+              </div>
+
+              <Button variant="secondary" className="mt-4"><span className="flex items-center"><Settings className="mr-2" size={20}/> Editar Perfil</span></Button>
+              <Button variant="secondary"><span className="flex items-center"><Lock className="mr-2" size={20}/> Alterar Senha</span></Button>
+              <div className="pt-8">
+                <Button variant="danger" onClick={onLogout}><span className="flex items-center"><LogOut className="mr-2" size={20} /> Sair da Conta</span></Button>
+              </div>
+            </div>
+          </div>
+        );
+
+        function App() {
+          const [currentScreen, setCurrentScreen] = useState('login');
+          const [user, setUser] = useState(null);
+          const [toast, setToast] = useState(null);
+
+          const showToast = (message, type) => setToast({ message, type });
+          const closeToast = () => setToast(null);
+
+          const handleLogin = (userData) => { setUser(userData); setCurrentScreen('home'); };
+          const handleLogout = () => { setUser(null); setCurrentScreen('login'); };
+
+          return (
+            <React.Fragment>
+                {/* Status Bar Mock (Somente visual se testar no PC) */}
+                <div className="h-7 w-full flex justify-between items-center px-6 pt-2 text-[10px] text-gray-500 font-medium z-50 bg-[#121212] bg-opacity-80 backdrop-blur hidden sm:flex">
+                  <span>9:41</span>
+                  <div className="flex space-x-1"><Activity size={12}/></div>
+                </div>
+
+                {toast && <Toast message={toast.message} type={toast.type} onClose={closeToast} />}
+
+                <div className="flex-1 overflow-hidden relative w-full h-full">
+                  {currentScreen === 'login' && <LoginScreen onNavigate={setCurrentScreen} onLogin={handleLogin} showToast={showToast} />}
+                  {currentScreen === 'register' && <RegisterScreen onNavigate={setCurrentScreen} showToast={showToast} />}
+                  {currentScreen === 'home' && <HomeScreen user={user} showToast={showToast} />}
+                  {currentScreen === 'profile' && <ProfileScreen user={user} onLogout={handleLogout} />}
+                </div>
+
+                {(currentScreen === 'home' || currentScreen === 'profile') && (
+                  <div className="bg-[#1E1E1E]/95 backdrop-blur-md border-t border-gray-800 p-4 pb-6 flex justify-around items-center absolute bottom-0 w-full z-20">
+                    <button onClick={() => setCurrentScreen('home')} className={`flex flex-col items-center p-2 transition-colors ${currentScreen === 'home' ? 'text-[#2563EB]' : 'text-gray-500'}`}>
+                      <Home size={24} className="mb-1" />
+                      <span className="text-[10px] font-medium">Início</span>
+                    </button>
+                    <button onClick={() => setCurrentScreen('profile')} className={`flex flex-col items-center p-2 transition-colors ${currentScreen === 'profile' ? 'text-[#2563EB]' : 'text-gray-500'}`}>
+                      <User size={24} className="mb-1" />
+                      <span className="text-[10px] font-medium">Perfil</span>
+                    </button>
+                  </div>
+                )}
+            </React.Fragment>
+          );
+        }
+
+        // Inicia o App no DOM
+        const rootElement = document.getElementById('root');
+        const root = ReactDOM.createRoot(rootElement);
+        root.render(<App />);
+    </script>
+</body>
+</html>
